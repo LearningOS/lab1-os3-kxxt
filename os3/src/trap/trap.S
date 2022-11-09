@@ -7,7 +7,7 @@
     ld x\n, \n*8(sp)
 .endm
 
-    .section.text
+    .section .text
     .globl __alltraps
     .globl __restore
     .align 2

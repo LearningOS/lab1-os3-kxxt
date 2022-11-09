@@ -20,7 +20,7 @@ impl TrapContext {
         let mut sstatus = sstatus::read();
         sstatus.set_spp(SPP::User);
         let x = [0; 32];
-        let trap_context = Self {
+        let mut trap_context = Self {
             x,
             sstatus,
             sepc: entry,
