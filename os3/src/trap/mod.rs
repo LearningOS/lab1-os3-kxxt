@@ -3,12 +3,14 @@ mod context;
 use crate::syscall::syscall;
 pub use context::TrapContext;
 use core::arch::global_asm;
-use riscv::register::{scause, stval, stvec, utvec::TrapMode};
+use riscv::register::{scause, stval, stvec, utvec::TrapMode, sie};
 
 global_asm!(include_str!("trap.S"));
 
 pub fn enable_timer_interrupt() {
-    todo!()
+    unsafe {
+        sie::set_stimer();
+    }
 }
 
 pub fn init() {
