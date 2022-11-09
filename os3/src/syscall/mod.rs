@@ -4,7 +4,10 @@ mod process;
 use fs::*;
 use process::*;
 
-use crate::task::{TaskInfo, TASK_MANAGER};
+use crate::{
+    task::{TaskInfo, TASK_MANAGER},
+    timer::TimeVal,
+};
 
 // System Call Numbers
 

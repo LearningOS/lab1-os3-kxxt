@@ -1,6 +1,6 @@
 use crate::{
     task::{exit_current_and_run_next, suspend_current_and_run_next, TaskInfo, TASK_MANAGER},
-    timer::{get_time, get_time_us},
+    timer::{read_time, TimeVal},
 };
 
 pub fn sys_exit(exit_code: i32) -> ! {
@@ -14,19 +14,8 @@ pub fn sys_yield() -> isize {
     0
 }
 
-#[repr(C)]
-pub struct TimeVal {
-    pub sec: usize,
-    pub usec: usize,
-}
-
 pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
-    unsafe {
-        *ts = TimeVal {
-            sec: get_time(),
-            usec: get_time_us(),
-        }
-    }
+    unsafe { *ts = read_time() }
     0
 }
 

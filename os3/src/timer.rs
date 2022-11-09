@@ -5,6 +5,12 @@ use riscv::register::time;
 const TICKS_PER_SEC: usize = 100;
 const MICRO_PER_SEC: usize = 1_000_000;
 
+#[repr(C)]
+pub struct TimeVal {
+    pub sec: usize,
+    pub usec: usize,
+}
+
 pub fn get_time() -> usize {
     time::read()
 }
@@ -17,3 +23,10 @@ pub fn set_next_trigger() {
     set_timer(get_time() + CLOCK_FREQ / TICKS_PER_SEC);
 }
 
+pub fn read_time() -> TimeVal {
+    let usecs = get_time_us();
+    TimeVal {
+        sec: usecs / MICRO_PER_SEC,
+        usec: usecs % MICRO_PER_SEC,
+    }
+}
