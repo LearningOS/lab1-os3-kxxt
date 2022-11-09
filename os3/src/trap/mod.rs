@@ -1,9 +1,9 @@
 mod context;
 
-use crate::syscall::syscall;
+use crate::{syscall::syscall, task::{suspend_current_and_run_next, exit_current_and_run_next}, timer::set_next_trigger};
 pub use context::TrapContext;
 use core::arch::global_asm;
-use riscv::register::{scause, stval, stvec, utvec::TrapMode, sie};
+use riscv::register::{scause, sie, stval, stvec, utvec::TrapMode};
 
 global_asm!(include_str!("trap.S"));
 
@@ -22,16 +22,14 @@ pub fn init() {
     }
 }
 
-pub fn run_next_app() {
-    todo!()
-}
-
 #[no_mangle]
 pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
     let scause = scause::read();
     let stval = stval::read();
     use scause::Exception::*;
+    use scause::Interrupt::*;
     use scause::Trap::Exception;
+    use scause::Trap::Interrupt;
     match scause.cause() {
         Exception(UserEnvCall) => {
             cx.sepc += 4;
@@ -39,11 +37,15 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
         }
         Exception(StoreFault) | Exception(StorePageFault) => {
             error!("[kernel] Store(Page)Fault in application, core dumped.");
-            run_next_app();
+            exit_current_and_run_next();
         }
         Exception(IllegalInstruction) => {
             error!("[kernel] IllegalInstruction in application, core dumped.");
-            run_next_app();
+            exit_current_and_run_next();
+        }
+        Interrupt(SupervisorTimer) => {
+            set_next_trigger();
+            suspend_current_and_run_next();
         }
         _ => panic!(
             "Unsupported trap {:?}, stval = {:#x}!",

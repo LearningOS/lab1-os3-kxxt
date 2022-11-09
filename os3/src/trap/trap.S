@@ -47,9 +47,10 @@ __alltraps:
     call trap_handler
 
 __restore:
+    # we do not need to get sp from a0 because sp is restored in __switch
     # case1: start running app by __restore
     # case2: back to U after handling trap
-    mv sp, a0
+    # mv sp, a0
     # restore sstatus, sepc
     ld t0, 32*8(sp)
     ld t1, 33*8(sp)
