@@ -1,11 +1,15 @@
 mod context;
 
-use core::arch::global_asm;
-
+use crate::syscall::syscall;
 pub use context::TrapContext;
+use core::arch::global_asm;
 use riscv::register::{scause, stval, stvec, utvec::TrapMode};
 
 global_asm!(include_str!("trap.S"));
+
+pub fn enable_timer_interrupt() {
+    todo!()
+}
 
 pub fn init() {
     extern "C" {
@@ -16,6 +20,11 @@ pub fn init() {
     }
 }
 
+pub fn run_next_app() {
+    todo!()
+}
+
+#[no_mangle]
 pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
     let scause = scause::read();
     let stval = stval::read();
