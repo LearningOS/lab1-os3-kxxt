@@ -1,10 +1,11 @@
 use lazy_static::lazy_static;
 
 use crate::{
-    config::MAX_APP_NUM,
+    config::{MAX_APP_NUM, MAX_SYSCALL_NUM},
     loader::{get_num_app, init_app_cx},
     sync::UPSafeCell,
-    task::{context::TaskContext, task::TaskStatus},
+    task::context::TaskContext,
+    timer::get_time,
 };
 
 use self::{switch::__switch, task::TaskControlBlock};
@@ -13,7 +14,10 @@ mod context;
 mod switch;
 mod task;
 
+pub use task::{TaskInfo, TaskStatus};
+
 pub fn run_first_task() {
+    debug!("[kernel] Preparing to call run_first_task.");
     TASK_MANAGER.run_first_task();
 }
 
@@ -34,7 +38,11 @@ pub struct TaskManager {
 
 impl TaskManager {
     fn run_first_task(&self) -> ! {
+        debug!("[kernel]: ENTERING");
         let mut inner = self.inner.exclusive_access();
+        debug!("[kernel]: ARE YOU OK?");
+        inner.record_current_task_start_time();
+        println!("[KERN]: STILL HERE?");
         let task0 = &mut inner.tasks[0];
         task0.task_status = TaskStatus::Running;
         let next_cx_ptr = &task0.task_cx as *const TaskContext;
@@ -67,6 +75,7 @@ impl TaskManager {
         let current = inner.current_task;
         inner.tasks[next].task_status = TaskStatus::Running;
         inner.current_task = next;
+        inner.record_current_task_start_time();
         let current_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
         let next_cx_ptr = &inner.tasks[next].task_cx as *const TaskContext;
         drop(inner); // give up exclusive access
@@ -82,11 +91,34 @@ impl TaskManager {
             .map(|id| id % self.num_app)
             .find(|&id| inner.tasks[id].task_status == TaskStatus::Ready)
     }
+
+    pub(crate) fn get_current_task_info(&self) -> TaskInfo {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let task_cb = inner.tasks[current];
+        TaskInfo {
+            status: task_cb.task_status,
+            syscall_times: task_cb.syscall_times,
+            time: get_time() - task_cb.time_start,
+        }
+    }
+
+    pub(crate) fn increase_syscall_counter(&self, num: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].syscall_times[num] += 1;
+    }
 }
 
 struct TaskManagerInner {
     tasks: [TaskControlBlock; MAX_APP_NUM],
     current_task: usize,
+}
+
+impl TaskManagerInner {
+    fn record_current_task_start_time(&mut self) {
+        self.tasks[self.current_task].time_start = get_time();
+    }
 }
 
 lazy_static! {
@@ -95,6 +127,8 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            syscall_times: [0; MAX_SYSCALL_NUM],
+            time_start: 0,
         }; MAX_APP_NUM];
         for (i, t) in tasks.iter_mut().enumerate().take(num_app) {
             t.task_cx = TaskContext::goto_restore(init_app_cx(i));

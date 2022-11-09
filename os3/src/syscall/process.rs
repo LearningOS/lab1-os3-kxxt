@@ -1,5 +1,5 @@
 use crate::{
-    task::{exit_current_and_run_next, suspend_current_and_run_next},
+    task::{exit_current_and_run_next, suspend_current_and_run_next, TaskInfo, TASK_MANAGER},
     timer::{get_time, get_time_us},
 };
 
@@ -27,5 +27,10 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
             usec: get_time_us(),
         }
     }
+    0
+}
+
+pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
+    unsafe { *ti = TASK_MANAGER.get_current_task_info() }
     0
 }
