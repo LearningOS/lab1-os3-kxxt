@@ -5,7 +5,7 @@ use crate::{
     loader::{get_num_app, init_app_cx},
     sync::UPSafeCell,
     task::context::TaskContext,
-    timer::get_time,
+    timer::get_time_ms,
 };
 
 use self::{switch::__switch, task::TaskControlBlock};
@@ -75,7 +75,9 @@ impl TaskManager {
         let current = inner.current_task;
         inner.tasks[next].task_status = TaskStatus::Running;
         inner.current_task = next;
-        inner.record_current_task_start_time();
+        if inner.tasks[next].time_start == 0 {
+            inner.record_current_task_start_time();
+        }
         let current_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
         let next_cx_ptr = &inner.tasks[next].task_cx as *const TaskContext;
         drop(inner); // give up exclusive access
@@ -96,10 +98,15 @@ impl TaskManager {
         let inner = self.inner.exclusive_access();
         let current = inner.current_task;
         let task_cb = inner.tasks[current];
+        let time_ms = get_time_ms();
+        info!(
+            "[kernel] get current task info called by task {} at time {}",
+            current, time_ms
+        );
         TaskInfo {
             status: task_cb.task_status,
             syscall_times: task_cb.syscall_times,
-            time: get_time() - task_cb.time_start,
+            time: time_ms - task_cb.time_start,
         }
     }
 
@@ -117,7 +124,9 @@ struct TaskManagerInner {
 
 impl TaskManagerInner {
     fn record_current_task_start_time(&mut self) {
-        self.tasks[self.current_task].time_start = get_time();
+        let t = get_time_ms();
+        info!("[kernel] task {} started at time {}", self.current_task, t);
+        self.tasks[self.current_task].time_start = t;
     }
 }
 

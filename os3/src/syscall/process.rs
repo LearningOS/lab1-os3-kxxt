@@ -15,6 +15,7 @@ pub fn sys_yield() -> isize {
 }
 
 pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
+    // info!("[kernel] time read: {}ms", get_time_ms());
     unsafe { *ts = read_time() }
     0
 }
