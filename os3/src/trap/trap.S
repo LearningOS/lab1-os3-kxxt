@@ -69,7 +69,7 @@ __restore:
         .set n, n+1
     .endr
     # release the TrapContext struct
-    addi sp, sp, -34*8
+    addi sp, sp, 34*8
     csrrw sp, sscratch, sp
     # return to U mode
     sret
