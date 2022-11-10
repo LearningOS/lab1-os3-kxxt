@@ -2,6 +2,7 @@
 #![no_main]
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
+#![feature(let_else)]
 
 #[macro_use]
 extern crate log;
@@ -46,6 +47,7 @@ pub fn rust_main() -> ! {
     loader::load_apps();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();
+    println!("[kernel] Preparing to run first task!");
     task::run_first_task();
     panic!("Unreachable in rust_main!");
 }
